@@ -85,7 +85,17 @@ function Notex:OnDocLoaded()
 				self.wndMain:FindChild("EditBox"):AddStyleEx("ReadOnly")
 				self.wndMain:RemoveStyle("Sizable")
 				self.wndMain:RemoveStyle("Moveable")
+				self.wndMain:AddStyle("IgnoreMouse")
+				self.wndMain:FindChild("EditBox"):AddStyle("IgnoreMouse")
+			else
+				self.wndMain:FindChild("EditBox"):RemoveStyleEx("ReadOnly")
+				self.wndMain:AddStyle("Sizable")
+				self.wndMain:AddStyle("Moveable")
+				self.wndMain:RemoveStyle("IgnoreMouse")
+				self.wndMain:FindChild("EditBox"):RemoveStyle("IgnoreMouse")
 			end
+			
+			
 			self.wndMain:FindChild("EditBox"):SetText("Write stuff here")	
 			
 			if self.config.size then
@@ -209,11 +219,13 @@ function Notex:OnNotexOn(cmd, param)
 			}
 			self.wndMain:MoveToLocation(WindowLocation.new(loc))		
 		elseif list[1] == "size" then
-			if tonumber(list[2]) < 1 or tonumber(list[2]) > 7 then
-				Print('size should be one of those : {1, 2, 3, 4, 5, 6, 7}')
+			if tonumber(list[2]) < 0 or tonumber(list[2]) > 7 then
+				Print('size should be one of those : {0, 1, 2, 3, 4, 5, 6, 7}')
 			else 
-				if tonumber(list[2]) == 1 then
-					self.config.size = 'CRB_HeaderTiny'
+				if tonumber(list[2]) == 0 then
+					self.config.size = 'CRB_InterfaceTiny_BB'
+				elseif tonumber(list[2]) == 1 then
+					self.config.size = 'CRB_InterfaceSmall_I'
 				elseif tonumber(list[2]) == 2 then
 					self.config.size = 'CRB_HeaderSmall'					
 				elseif tonumber(list[2]) == 3 then
@@ -234,11 +246,15 @@ function Notex:OnNotexOn(cmd, param)
 			self.wndMain:FindChild("EditBox"):AddStyleEx("ReadOnly")
 			self.wndMain:RemoveStyle("Sizable")
 			self.wndMain:RemoveStyle("Moveable")
+			self.wndMain:AddStyle("IgnoreMouse")
+			self.wndMain:FindChild("EditBox"):AddStyle("IgnoreMouse")
 		elseif list[1] == "unlock" then
 			self.config.lock = false
 			self.wndMain:FindChild("EditBox"):RemoveStyleEx("ReadOnly")
 			self.wndMain:AddStyle("Sizable")
 			self.wndMain:AddStyle("Moveable")
+			self.wndMain:RemoveStyle("IgnoreMouse")
+			self.wndMain:FindChild("EditBox"):RemoveStyle("IgnoreMouse")
 		elseif list[1] == "show" then
 			self.wndMain:Invoke()
 			self.config.enabled = true
