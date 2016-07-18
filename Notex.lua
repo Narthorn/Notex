@@ -24,9 +24,12 @@ function Notex:new(o)
     o = o or {}
     setmetatable(o, self)
     self.__index = self 
-
-    -- initialize variables here
-
+	self.config = {}
+	self.config.enabled = false
+	self.config.opacity = 1
+	self.config.wndLoc = nil
+	self.config.lock = false
+	
     return o
 end
 
@@ -47,6 +50,7 @@ function Notex:OnLoad()
     -- load our form file
 	self.xmlDoc = XmlDoc.CreateFromFile("Notex.xml")
 	self.xmlDoc:RegisterCallback("OnDocLoaded", self)
+	Apollo.RegisterEventHandler("Group_Left", "OnGroup_Left", self)
 end
 
 -----------------------------------------------------------------------------------------------
@@ -62,7 +66,24 @@ function Notex:OnDocLoaded()
 		end
 		
 	    self.wndMain:Show(false, true)
-
+		
+		if self.config.enabled == true then
+			self.wndMain:Invoke()
+			if self.config.wndLoc then
+				self.wndMain:MoveToLocation(WindowLocation.new(self.config.wndLoc))
+			end
+			if self.config.opacity then
+				self.wndMain:SetOpacity(self.config.opacity)
+			end
+			
+			if self.config.lock then
+				self.wndMain:FindChild("EditBox"):AddStyleEx("ReadOnly")
+				self.wndMain:RemoveStyle("Sizable")
+				self.wndMain:RemoveStyle("Moveable")
+			end
+			self.wndMain:FindChild("EditBox"):SetText("Write stuff here")		
+		end
+		
 		-- if the xmlDoc is no longer needed, you should set it to nil
 		-- self.xmlDoc = nil
 		
@@ -98,6 +119,10 @@ function Notex:OnMessageReceived(channel, strMessage, strSender)
 	self.wndMain:FindChild("EditBox"):SetText(strMessage)
 end 
 
+function Notex:OnGroup_Left()
+	self.wndMain:FindChild("EditBox"):SetText("Write stuff here")
+end
+
 -----------------------------------------------------------------------------------------------
 -- Notex Functions
 -----------------------------------------------------------------------------------------------
@@ -105,46 +130,63 @@ end
 -- on SlashCommand "/notex"
 function Notex:OnNotexOn(cmd, param)
 	if param == "" then
-		Print('on : show the window')
-		Print('off : close the window')
-		Print('share : Share with retards in the group')
+		Print('show : show the window')
+		Print('hide : close the window')
+		Print('opacity / op $num : change opacity with $number (between 0 and 1)')
 		Print('lock : disable changes')
 		Print('unlock : enable changes')
 	elseif param == "lock" then
+		self.config.lock = true
 		self.wndMain:FindChild("EditBox"):AddStyleEx("ReadOnly")
+		self.wndMain:RemoveStyle("Sizable")
+		self.wndMain:RemoveStyle("Moveable")
 	elseif param == "unlock" then
+		self.config.lock = false
 		self.wndMain:FindChild("EditBox"):RemoveStyleEx("ReadOnly")
-	elseif param == "on" then
+		self.wndMain:AddStyle("Sizable")
+		self.wndMain:AddStyle("Moveable")
+	elseif param == "show" then
 		self.wndMain:Invoke()
-		local isLead = false
-		local playerUnit = GameLib.GetPlayerUnit()
-		local count = GroupLib.GetMemberCount()
-		for i=1, count, 1 do
-			local groupMember = GroupLib.GetGroupMember(i)
-			if playerUnit:GetName() == groupMember.strCharacterName then
-				if groupMember.bIsLeader or groupMember.bRaidAssistant or groupMember.bMainAssist then
-					isLead = true
-				end
-			end	
-		end
-		if isLead == false then
-			self.wndMain:FindChild("EditBox"):AddStyleEx("ReadOnly")
-		end
-	elseif param == "off" then
+		self.config.enabled = true
+	elseif param == "hide" then
 		self.wndMain:Close()
-	elseif param == "share" then
-		local playerUnit = GameLib.GetPlayerUnit()
-		local count = GroupLib.GetMemberCount()
-		for i=1, count, 1 do
-			local groupMember = GroupLib.GetGroupMember(i)
-			if playerUnit:GetName() == groupMember.strCharacterName then
-				if groupMember.bIsLeader or groupMember.bRaidAssistant or groupMember.bMainAssist then
-					local txt = self.wndMain:FindChild("EditBox"):GetText()
-					self.Room:SendMessage(txt)
-				end
-			end	
+		self.config.enabled = false
+	else
+		local list = {}
+		for arg in param:gmatch("[^%s]+") do
+			table.insert(list, arg)
+		end	
+		if list[1] == "opacity" or list[1] == "op" then
+			if tonumber(list[2]) < 0 or tonumber(list[2]) > 1 then
+				Print('Opacity number should be > 0 and < 1')
+			else
+				self.config.opacity = tonumber(list[2])
+				self.wndMain:SetOpacity(tonumber(list[2]))
+			end
 		end
-	end 
+	end
+end
+
+function Notex:OnSave(eType)	
+	if eType ~= GameLib.CodeEnumAddonSaveLevel.Account then
+		return
+	end
+	
+	self.config.wndLoc = self.wndMain:GetLocation():ToTable() 
+	
+	return self.config
+end
+
+function Notex:OnRestore(eLevel, tSavedData)
+	if eLevel ~= GameLib.CodeEnumAddonSaveLevel.Account then
+		return
+	end
+	
+	self.config.enabled = tSavedData.enabled
+	self.config.opacity = tSavedData.opacity
+	self.config.wndLoc = tSavedData.wndLoc
+	self.config.lock = tSavedData.lock
+	
 end
 
 
