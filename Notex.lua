@@ -29,6 +29,7 @@ function Notex:new(o)
 	self.config.opacity = 1
 	self.config.wndLoc = nil
 	self.config.lock = false
+	self.config.size = 'CRB_HeaderSmall'
 	
     return o
 end
@@ -73,7 +74,7 @@ function Notex:OnDocLoaded()
 				self.wndMain:MoveToLocation(WindowLocation.new(self.config.wndLoc))
 			end
 			if self.config.opacity then
-				self.wndMain:SetOpacity(self.config.opacity)
+				self.wndMain:SetBGOpacity(self.config.opacity)
 			end
 			
 			if self.config.lock then
@@ -81,7 +82,11 @@ function Notex:OnDocLoaded()
 				self.wndMain:RemoveStyle("Sizable")
 				self.wndMain:RemoveStyle("Moveable")
 			end
-			self.wndMain:FindChild("EditBox"):SetText("Write stuff here")		
+			self.wndMain:FindChild("EditBox"):SetText("Write stuff here")	
+			
+			if self.config.size then
+				self.wndMain:FindChild("EditBox"):SetFont(self.config.size)
+			end					
 		end
 		
 		-- if the xmlDoc is no longer needed, you should set it to nil
@@ -132,37 +137,59 @@ function Notex:OnNotexOn(cmd, param)
 	if param == "" then
 		Print('show : show the window')
 		Print('hide : close the window')
-		Print('opacity / op $num : change opacity with $number (between 0 and 1)')
+		Print('opacity $num : change opacity with $number (between 0 and 1)')
+		Print('size $num : change size of the text ({1, 2, 3, 4, 5, 6, 7})')
 		Print('lock : disable changes')
 		Print('unlock : enable changes')
-	elseif param == "lock" then
-		self.config.lock = true
-		self.wndMain:FindChild("EditBox"):AddStyleEx("ReadOnly")
-		self.wndMain:RemoveStyle("Sizable")
-		self.wndMain:RemoveStyle("Moveable")
-	elseif param == "unlock" then
-		self.config.lock = false
-		self.wndMain:FindChild("EditBox"):RemoveStyleEx("ReadOnly")
-		self.wndMain:AddStyle("Sizable")
-		self.wndMain:AddStyle("Moveable")
-	elseif param == "show" then
-		self.wndMain:Invoke()
-		self.config.enabled = true
-	elseif param == "hide" then
-		self.wndMain:Close()
-		self.config.enabled = false
 	else
 		local list = {}
 		for arg in param:gmatch("[^%s]+") do
 			table.insert(list, arg)
 		end	
-		if list[1] == "opacity" or list[1] == "op" then
-			if tonumber(list[2]) < 0 or tonumber(list[2]) > 1 then
-				Print('Opacity number should be > 0 and < 1')
-			else
-				self.config.opacity = tonumber(list[2])
-				self.wndMain:SetOpacity(tonumber(list[2]))
+		if list[1] == "size" then
+			if tonumber(list[2]) < 1 or tonumber(list[2]) > 7 then
+				Print('size should be one of those : {1, 2, 3, 4, 5, 6, 7}')
+			else 
+				if tonumber(list[2]) == 1 then
+					self.config.size = 'CRB_HeaderTiny'
+				elseif tonumber(list[2]) == 2 then
+					self.config.size = 'CRB_HeaderSmall'					
+				elseif tonumber(list[2]) == 3 then
+					self.config.size = 'CRB_HeaderMedium'
+				elseif tonumber(list[2]) == 4 then
+					self.config.size = 'CRB_HeaderLarge'
+				elseif tonumber(list[2]) == 5 then
+					self.config.size = 'CRB_HeaderHuge'
+				elseif tonumber(list[2]) == 6 then
+					self.config.size = 'CRB_HeaderHuger'
+				elseif tonumber(list[2]) == 7 then
+					self.config.size = 'CRB_HeaderGigantic'
+				end
+				self.wndMain:FindChild("EditBox"):SetFont(self.config.size)
 			end
+		elseif list[1] == "lock" then
+			self.config.lock = true
+			self.wndMain:FindChild("EditBox"):AddStyleEx("ReadOnly")
+			self.wndMain:RemoveStyle("Sizable")
+			self.wndMain:RemoveStyle("Moveable")
+		elseif list[1] == "unlock" then
+			self.config.lock = false
+			self.wndMain:FindChild("EditBox"):RemoveStyleEx("ReadOnly")
+			self.wndMain:AddStyle("Sizable")
+			self.wndMain:AddStyle("Moveable")
+		elseif list[1] == "show" then
+			self.wndMain:Invoke()
+			self.config.enabled = true
+		elseif list[1] == "hide" then
+			self.wndMain:Close()
+			self.config.enabled = false
+		elseif list[1] == "opacity" or list[1] == "op" then
+				if tonumber(list[2]) < 0 or tonumber(list[2]) > 1 then
+					Print('Opacity number should be > 0 and < 1')
+				else
+					self.config.opacity = tonumber(list[2])
+					self.wndMain:SetBGOpacity(tonumber(list[2]))
+				end
 		end
 	end
 end
@@ -186,6 +213,7 @@ function Notex:OnRestore(eLevel, tSavedData)
 	self.config.opacity = tSavedData.opacity
 	self.config.wndLoc = tSavedData.wndLoc
 	self.config.lock = tSavedData.lock
+	self.config.size = tSavedData.size
 	
 end
 
