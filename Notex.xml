@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<Forms>
+    <Form Class="Window" LAnchorPoint="0" LAnchorOffset="124" TAnchorPoint="0" TAnchorOffset="114" RAnchorPoint="0" RAnchorOffset="694" BAnchorPoint="0" BAnchorOffset="477" RelativeToClient="1" Font="Default" Text="" Template="Default" Name="NotexForm" Border="1" Picture="1" SwallowMouseClicks="1" Moveable="1" Escapable="0" Overlapped="0" BGColor="black" TextColor="white" TextId="" TooltipColor="" Sizable="1" TooltipType="OnCursor" NoClip="1" Sprite="BasicSprites:BlackFill">
+        <Control Class="EditBox" LAnchorPoint="0" LAnchorOffset="0" TAnchorPoint="0" TAnchorOffset="0" RAnchorPoint="1" RAnchorOffset="-14" BAnchorPoint="1" BAnchorOffset="-15" RelativeToClient="1" Font="Default" Text="Write stuff here" BGColor="black" TextColor="white" Template="Default" TooltipType="OnCursor" Name="EditBox" TooltipColor="" TextId="" Tooltip="" MultiLine="1" SizeToFit="1" Sizable="0" DT_VCENTER="0" NeverBringToFront="0" IgnoreMouse="1" LoseFocusOnExternalClick="1" WantTab="0" WantReturn="0"/>
+    </Form>
+</Forms>
