@@ -135,7 +135,6 @@ function Notex:RequestMessage()
 		for i=1, count, 1 do	
 			local groupMember = GroupLib.GetGroupMember(i)
 			if groupMember.bIsLeader then
-				Print('Sending a request to share to ' .. groupMember.strCharacterName)
 				self.Room:SendPrivateMessage(groupMember.strCharacterName, 'request')	
 			end
 		end
@@ -143,7 +142,6 @@ function Notex:RequestMessage()
 end
 
 function Notex:OnMessageReceived(channel, strMessage, strSender)
-	Print('Recieving : ' .. strMessage)
 	local time =  os.time()
 	if self.lastmsgtime > time then
 		return	
@@ -178,7 +176,6 @@ function Notex:OnChatMessage(channelSource, tMessageInfo)
 		local groupMember = GroupLib.GetGroupMember(i)
 		if tMessageInfo.strSender == groupMember.strCharacterName then
 			if groupMember.bIsLeader or groupMember.bMainAssist or groupMember.bRaidAssistant then
-				Print('Message in party chat from Leader / RaidAssist')
 				self.wndMain:FindChild("EditBox"):SetText(strMsg:sub(PartyChatSharingKey:len() + 1):gsub('~', '\n'))
 				self.lastmsgtime = os.time()				
 			end
