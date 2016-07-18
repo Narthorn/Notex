@@ -16,7 +16,8 @@ local Notex = {}
 -- Constants
 -----------------------------------------------------------------------------------------------
 -- e.g. local kiExampleVariableMax = 999
- 
+local PartyChatSharingKey = "}=>"
+
 -----------------------------------------------------------------------------------------------
 -- Initialization
 -----------------------------------------------------------------------------------------------
@@ -25,11 +26,14 @@ function Notex:new(o)
     setmetatable(o, self)
     self.__index = self 
 	self.config = {}
-	self.config.enabled = false
+	self.config.enabled = true
 	self.config.opacity = 1
 	self.config.wndLoc = nil
 	self.config.lock = false
 	self.config.size = 'CRB_HeaderSmall'
+	self.lastmsgtime = 0
+	self.shared = false
+	self.joined = false
 	
     return o
 end
@@ -95,37 +99,91 @@ function Notex:OnDocLoaded()
 		-- Register handlers for events, slash commands and timer, etc.
 		-- e.g. Apollo.RegisterEventHandler("KeyDown", "OnKeyDown", self)
 		Apollo.RegisterSlashCommand("notex", "OnNotexOn", self)
-
+		Apollo.RegisterEventHandler("ChatMessage", "OnChatMessage", self)
 
 		-- Do additional Addon initialization here
-		self.ConnectTimer = ApolloTimer.Create(1, false, "Connect_Chatroom", self)
+		self.ConnectTimer = ApolloTimer.Create(1, true, "Connect_Chatroom", self)
 		self.ConnectTimer:Start()
 	end
 end
 
 function Notex:Connect_Chatroom()
-	local joined = false
-	
 	if self.Room then
-		joined = true 
+		self.joined = true 
 	end
-	if joined then 
+	if self.joined then 
 		self.ConnectTimer:Stop()
 		return
 	else
 		self.Room = ICCommLib.JoinChannel("notex")
 		if self.Room then
 			self.Room:SetReceivedMessageFunction("OnMessageReceived", self)
+			if GameLib.GetPlayerUnit():IsInYourGroup() then
+				self.RequestTimer = ApolloTimer.Create(1, true, "RequestMessage", self)
+				self.RequestTimer:Start()
+			end
 		end
 	end 
 end
 
+function Notex:RequestMessage() 
+	if self.shared then 
+		self.RequestTimer:Stop()
+		return
+	else
+		local count = GroupLib.GetMemberCount()
+		for i=1, count, 1 do	
+			local groupMember = GroupLib.GetGroupMember(i)
+			if groupMember.bIsLeader then
+				Print('Sending a request to share to ' .. groupMember.strCharacterName)
+				self.Room:SendPrivateMessage(groupMember.strCharacterName, 'request')	
+			end
+		end
+	end
+end
+
 function Notex:OnMessageReceived(channel, strMessage, strSender)
+	Print('Recieving : ' .. strMessage)
+	local time =  os.time()
+	if self.lastmsgtime > time then
+		return	
+	end
+	
 	self.wndMain:FindChild("EditBox"):SetText(strMessage)
+	self.lastmsgtime = time
+	self.shared = true
 end 
 
 function Notex:OnGroup_Left()
 	self.wndMain:FindChild("EditBox"):SetText("Write stuff here")
+end
+
+
+function Notex:OnChatMessage(channelSource, tMessageInfo)
+	if channelSource:GetType() ~= ChatSystemLib.ChatChannel_Party then
+		return
+	end
+	
+	local msg = {}
+	for i, segment in ipairs(tMessageInfo.arMessageSegments) do
+		table.insert(msg, segment.strText)
+	end
+	local strMsg = table.concat(msg, "")
+	if strMsg:sub(0, PartyChatSharingKey:len()) ~= PartyChatSharingKey then
+		return
+	end
+	
+	local count = GroupLib.GetMemberCount()
+	for i=1, count, 1 do	
+		local groupMember = GroupLib.GetGroupMember(i)
+		if tMessageInfo.strSender == groupMember.strCharacterName then
+			if groupMember.bIsLeader or groupMember.bMainAssist or groupMember.bRaidAssistant then
+				Print('Message in party chat from Leader / RaidAssist')
+				self.wndMain:FindChild("EditBox"):SetText(strMsg:sub(PartyChatSharingKey:len() + 1):gsub('~', '\n'))
+				self.lastmsgtime = os.time()				
+			end
+		end
+	end
 end
 
 -----------------------------------------------------------------------------------------------
@@ -137,6 +195,7 @@ function Notex:OnNotexOn(cmd, param)
 	if param == "" then
 		Print('show : show the window')
 		Print('hide : close the window')
+		Print('reset : reset the location')
 		Print('opacity $num : change opacity with $number (between 0 and 1)')
 		Print('size $num : change size of the text ({1, 2, 3, 4, 5, 6, 7})')
 		Print('lock : disable changes')
@@ -146,7 +205,13 @@ function Notex:OnNotexOn(cmd, param)
 		for arg in param:gmatch("[^%s]+") do
 			table.insert(list, arg)
 		end	
-		if list[1] == "size" then
+		if list[1] == "reset" then
+			loc = {
+				fPoints  = {0,0,0,0},
+				nOffsets = {0,0,400,150}
+			}
+			self.wndMain:MoveToLocation(WindowLocation.new(loc))		
+		elseif list[1] == "size" then
 			if tonumber(list[2]) < 1 or tonumber(list[2]) > 7 then
 				Print('size should be one of those : {1, 2, 3, 4, 5, 6, 7}')
 			else 
